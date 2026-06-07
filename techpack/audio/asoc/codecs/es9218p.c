@@ -458,6 +458,10 @@ int g_ess_rev = ESS_B;
         SNDRV_PCM_FMTBIT_S32_LE | SNDRV_PCM_FMTBIT_S32_BE)
 
 
+#define LGE_ATTR(_name, _mode, _show, _store) \
+struct kobj_attribute lge_attr_##_name = __ATTR(_name, _mode, _show, _store)
+
+
 #ifdef ES9218P_SYSFS
 struct es9218_regmap {
     const char *name;
@@ -560,8 +564,8 @@ struct es9218_regmap {
     { "201_REGISTER",                      ES9219C_REG_201, 1 }, //201_PLL_CONFIG5
 };
 #ifdef CONFIG_SND_SOC_LGE_ESS_DIGITAL_FILTER
-static ssize_t get_fade_term_param(struct device *dev,
-	                    struct device_attribute *attr, char *buf)
+static ssize_t get_fade_term_param(struct kobject *obj,
+	                    struct kobj_attribute *attr, char *buf)
 {
 
 	unsigned val = 1;
@@ -572,8 +576,8 @@ static ssize_t get_fade_term_param(struct device *dev,
 }
 
 
-static ssize_t set_fade_term_param(struct device *dev,
-			 struct device_attribute *attr,
+static ssize_t set_fade_term_param(struct kobject *obj,
+			 struct kobj_attribute *attr,
 			 const char *buf, size_t count)
 {
 
@@ -587,8 +591,8 @@ static ssize_t set_fade_term_param(struct device *dev,
 
 }
 
-static ssize_t get_fade_mute_param(struct device *dev,
-	                    struct device_attribute *attr, char *buf)
+static ssize_t get_fade_mute_param(struct kobject *obj,
+	                    struct kobj_attribute *attr, char *buf)
 {
 
 	unsigned val = 1;
@@ -599,8 +603,8 @@ static ssize_t get_fade_mute_param(struct device *dev,
 }
 
 
-static ssize_t set_fade_mute_param(struct device *dev,
-			 struct device_attribute *attr,
+static ssize_t set_fade_mute_param(struct kobject *obj,
+			 struct kobj_attribute *attr,
 			 const char *buf, size_t count)
 {
 
@@ -614,12 +618,12 @@ static ssize_t set_fade_mute_param(struct device *dev,
 
 }
 
-static DEVICE_ATTR(fade_mute_count, S_IWUSR | S_IRUGO, get_fade_mute_param, set_fade_mute_param);
-static DEVICE_ATTR(fade_mute_term, S_IWUSR | S_IRUGO, get_fade_term_param, set_fade_term_param);
+static LGE_ATTR(fade_mute_count, S_IWUSR | S_IRUGO, get_fade_mute_param, set_fade_mute_param);
+static LGE_ATTR(fade_mute_term, S_IWUSR | S_IRUGO, get_fade_term_param, set_fade_term_param);
 #endif
 
-static ssize_t es9218_registers_show(struct device *dev,
-                  struct device_attribute *attr, char *buf)
+static ssize_t es9218_registers_show(struct kobject *obj,
+                  struct kobj_attribute *attr, char *buf)
 {
     unsigned i, n, reg_count;
     u8 read_buf;
@@ -636,8 +640,8 @@ static ssize_t es9218_registers_show(struct device *dev,
     return n;
 }
 
-static ssize_t es9218_registers_store(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t es9218_registers_store(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count)
 {
     unsigned i, reg_count, value;
@@ -679,7 +683,7 @@ static ssize_t es9218_registers_store(struct device *dev,
     return -1;
 }
 
-static DEVICE_ATTR(registers, S_IWUSR | S_IRUGO,
+static LGE_ATTR(registers, S_IWUSR | S_IRUGO,
         es9218_registers_show, es9218_registers_store);
 
 #endif /* ES9218P_SYSFS*/
@@ -1345,8 +1349,8 @@ static int es9218p_sabre_amp_stop(struct i2c_client *client, int headset)
 #ifdef ES9218P_SYSFS
 
 /* Left balance volume */
-static ssize_t set_forced_left_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_left_volume(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_val; // value representing dB decrease for left channel
     sscanf(buf, "%d", &input_val);
@@ -1358,16 +1362,16 @@ static ssize_t set_forced_left_volume(struct device *dev,
 
     return count;
 }
-static ssize_t get_forced_left_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_left_volume(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_left_volume);
 }
-static DEVICE_ATTR(left_volume, S_IWUSR|S_IRUGO, get_forced_left_volume, set_forced_left_volume);
+static LGE_ATTR(left_volume, S_IWUSR|S_IRUGO, get_forced_left_volume, set_forced_left_volume);
 
 /* Right balance volume */
-static ssize_t set_forced_right_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_right_volume(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_val; // value representing dB decrease for left channel
     sscanf(buf, "%d", &input_val);
@@ -1379,17 +1383,17 @@ static ssize_t set_forced_right_volume(struct device *dev,
 
     return count;
 }
-static ssize_t get_forced_right_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_right_volume(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_right_volume);
 }
-static DEVICE_ATTR(right_volume, S_IWUSR|S_IRUGO, get_forced_right_volume, set_forced_right_volume);
+static LGE_ATTR(right_volume, S_IWUSR|S_IRUGO, get_forced_right_volume, set_forced_right_volume);
 
 static int forced_headset_type = -1;
 
-static ssize_t set_forced_headset_type(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_headset_type(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count)
 {
     int input_val; //0, 1, 2
@@ -1409,18 +1413,18 @@ static ssize_t set_forced_headset_type(struct device *dev,
     }
     return count;
 }
-static ssize_t get_forced_headset_type(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_headset_type(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    char *buf)
 {
     return sprintf(buf, "%i\n", g_headset_type);
 }
-static DEVICE_ATTR(headset_type, S_IWUSR|S_IRUGO, get_forced_headset_type, set_forced_headset_type);
+static LGE_ATTR(headset_type, S_IWUSR|S_IRUGO, get_forced_headset_type, set_forced_headset_type);
 
 static int forced_avc_volume = -1;
 
-static ssize_t set_forced_avc_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_avc_volume(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count)
 {
     int input_vol;
@@ -1444,16 +1448,16 @@ static ssize_t set_forced_avc_volume(struct device *dev,
     return count;
 }
 
-static ssize_t get_forced_avc_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_avc_volume(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    char *buf)
 {
     return sprintf(buf, "%i\n", g_avc_volume);
 }
-static __maybe_unused DEVICE_ATTR(avc_volume, S_IWUSR|S_IRUGO, get_forced_avc_volume, set_forced_avc_volume);
+static __maybe_unused LGE_ATTR(avc_volume, S_IWUSR|S_IRUGO, get_forced_avc_volume, set_forced_avc_volume);
 
-static ssize_t set_forced_ess_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_ess_filter(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count)
 {
     int input_filter;
@@ -1486,13 +1490,13 @@ static ssize_t set_forced_ess_filter(struct device *dev,
     return count;
 }
 
-static ssize_t get_forced_ess_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_ess_filter(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    char *buf)
 {
     return sprintf(buf, "%i\n", g_sabre_cf_num);
 }
-static DEVICE_ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_forced_ess_filter);
+static LGE_ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_forced_ess_filter);
 
 /* Custom ESS Filter (filter [3] has to be selected) */
 #define MAX_FILTER_DATA_SIZE     16 /* shape, symmetry, followed by 14 stage 2 coefficients */
@@ -1504,8 +1508,8 @@ static DEVICE_ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_force
  * 1 ('\0' char)
  */
 #define MAX_FILTER_STRING_SIZE   2 + (8 * 14) + MAX_FILTER_DATA_SIZE + 1
-static ssize_t set_forced_ess_custom_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_ess_custom_filter(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
 	char *datatoken, *delimiter = ",";
 	char *received_data = kzalloc(MAX_FILTER_STRING_SIZE * sizeof(char), GFP_KERNEL);
@@ -1561,8 +1565,8 @@ static ssize_t set_forced_ess_custom_filter(struct device *dev,
 
 	return count;
 }
-static ssize_t get_forced_ess_custom_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_ess_custom_filter(struct kobject *obj,
+                   struct kobj_attribute *attr,
                    char *buf) {
 	char send_data[MAX_FILTER_STRING_SIZE];
 	char tempbuf[10]; /* There will never be an element on the filter data that takes more than 9 chars */
@@ -1608,20 +1612,20 @@ static ssize_t get_forced_ess_custom_filter(struct device *dev,
 
 	return sprintf(buf, "%s\n", send_data);
 }
-static DEVICE_ATTR(ess_custom_filter, S_IWUSR|S_IRUGO, get_forced_ess_custom_filter, set_forced_ess_custom_filter);
+static LGE_ATTR(ess_custom_filter, S_IWUSR|S_IRUGO, get_forced_ess_custom_filter, set_forced_ess_custom_filter);
 
 static struct attribute *es9218_attrs[] = {
 #ifdef CONFIG_SND_SOC_LGE_ESS_DIGITAL_FILTER
-	&dev_attr_fade_mute_count.attr,
-	&dev_attr_fade_mute_term.attr,
-    &dev_attr_ess_filter.attr,
+	&lge_attr_fade_mute_count.attr,
+	&lge_attr_fade_mute_term.attr,
+    &lge_attr_ess_filter.attr,
 #endif
-    &dev_attr_registers.attr,
-    &dev_attr_headset_type.attr,
-    // &dev_attr_avc_volume.attr,
-    &dev_attr_left_volume.attr,
-	&dev_attr_right_volume.attr,
-    &dev_attr_ess_custom_filter.attr,
+    &lge_attr_registers.attr,
+    &lge_attr_headset_type.attr,
+    // &lge_attr_avc_volume.attr,
+    &lge_attr_left_volume.attr,
+	&lge_attr_right_volume.attr,
+    &lge_attr_ess_custom_filter.attr,
     NULL
 };
 
