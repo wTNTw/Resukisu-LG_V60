@@ -208,12 +208,16 @@ int vfs_statx(int dfd, const char __user *filename, int flags,
 	struct filename *name = NULL;
 	int error = -EINVAL;
 	unsigned int lookup_flags = LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
+#ifdef CONFIG_KSU_SUSFS
+	bool use_filename = false;
+#endif
 
 #ifdef CONFIG_KSU_SUSFS
 	if (likely(susfs_is_current_proc_umounted()))
 		goto orig_flow;
 	if (static_branch_likely(&ksu_su_compat_enabled)) {
 		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val))) {
+			use_filename = true;
 			name = getname(filename);
 			if (IS_ERR(name))
 				return PTR_ERR(name);
@@ -237,9 +241,20 @@ orig_flow:
 		lookup_flags |= LOOKUP_EMPTY;
 
 retry:
-	if (name)
+#ifdef CONFIG_KSU_SUSFS
+	if (use_filename) {
+		if (!name) {
+			name = getname(filename);
+			if (IS_ERR(name)) {
+				error = PTR_ERR(name);
+				name = NULL;
+				goto out;
+			}
+		}
 		error = filename_lookup(dfd, name, lookup_flags, &path, NULL);
-	else
+		name = NULL;
+	} else
+#endif
 		error = user_path_at(dfd, filename, lookup_flags, &path);
 	if (error)
 		goto out;

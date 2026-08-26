@@ -387,17 +387,21 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 	struct filename *name = NULL;
 	int res;
 	unsigned int lookup_flags = LOOKUP_FOLLOW;
+#ifdef CONFIG_KSU_SUSFS
+	bool use_filename = false;
+#endif
 
 #ifdef CONFIG_KSU_SUSFS
 	if (likely(susfs_is_current_proc_umounted()))
 		goto orig_flow;
 	if (static_branch_likely(&ksu_su_compat_enabled))
 		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val))) {
+			use_filename = true;
 			name = getname(filename);
 			if (IS_ERR(name))
 				return PTR_ERR(name);
 			ksu_handle_faccessat(&dfd, &name, &mode, NULL);
-	}
+		}
 
 orig_flow:
 #endif
@@ -442,9 +446,20 @@ orig_flow:
 
 	old_cred = override_creds(override_cred);
 retry:
-	if (name)
+#ifdef CONFIG_KSU_SUSFS
+	if (use_filename) {
+		if (!name) {
+			name = getname(filename);
+			if (IS_ERR(name)) {
+				res = PTR_ERR(name);
+				name = NULL;
+				goto out;
+			}
+		}
 		res = filename_lookup(dfd, name, lookup_flags, &path, NULL);
-	else
+		name = NULL;
+	} else
+#endif
 		res = user_path_at(dfd, filename, lookup_flags, &path);
 	if (res)
 		goto out;
