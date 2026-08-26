@@ -372,8 +372,10 @@ SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
 #ifdef CONFIG_KSU_SUSFS
 extern struct static_key_true ksu_su_compat_enabled;
 extern bool __ksu_is_allow_uid_for_current(uid_t uid);
-extern int ksu_handle_faccessat(int *dfd, const char __user **filename_user, int *mode,
+extern int ksu_handle_faccessat(int *dfd, struct filename **filename, int *mode,
 			int *flags);
+extern int filename_lookup(int dfd, struct filename *name, unsigned flags,
+			struct path *path, struct path *root);
 #endif
 long do_faccessat(int dfd, const char __user *filename, int mode)
 {
@@ -382,6 +384,7 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 	struct path path;
 	struct inode *inode;
 	struct vfsmount *mnt;
+	struct filename *name = NULL;
 	int res;
 	unsigned int lookup_flags = LOOKUP_FOLLOW;
 
@@ -390,17 +393,20 @@ long do_faccessat(int dfd, const char __user *filename, int mode)
 		goto orig_flow;
 	if (static_branch_likely(&ksu_su_compat_enabled))
 		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val))) {
-			ksu_handle_faccessat(&dfd, &filename, &mode, NULL);
+			name = getname(filename);
+			if (IS_ERR(name))
+				return PTR_ERR(name);
+			ksu_handle_faccessat(&dfd, &name, &mode, NULL);
 	}
 
 orig_flow:
 #endif
 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
-		return -EINVAL;
+		goto out_putname;
 
 	override_cred = prepare_creds();
 	if (!override_cred)
-		return -ENOMEM;
+		goto out_putname;
 
 	override_cred->fsuid = override_cred->uid;
 	override_cred->fsgid = override_cred->gid;
@@ -436,7 +442,10 @@ orig_flow:
 
 	old_cred = override_creds(override_cred);
 retry:
-	res = user_path_at(dfd, filename, lookup_flags, &path);
+	if (name)
+		res = filename_lookup(dfd, name, lookup_flags, &path, NULL);
+	else
+		res = user_path_at(dfd, filename, lookup_flags, &path);
 	if (res)
 		goto out;
 
@@ -479,6 +488,9 @@ out_path_release:
 out:
 	revert_creds(old_cred);
 	put_cred(override_cred);
+out_putname:
+	if (name)
+		putname(name);
 	return res;
 }
 

@@ -196,13 +196,16 @@ EXPORT_SYMBOL(vfs_statx_fd);
 #ifdef CONFIG_KSU_SUSFS
 extern struct static_key_true ksu_su_compat_enabled;
 extern bool __ksu_is_allow_uid_for_current(uid_t uid);
-extern int ksu_handle_stat(int *dfd, const char __user **filename_user, int *flags);
+extern int ksu_handle_stat(int *dfd, struct filename **filename, int *flags);
+extern int filename_lookup(int dfd, struct filename *name, unsigned flags,
+			struct path *path, struct path *root);
 #endif
 
 int vfs_statx(int dfd, const char __user *filename, int flags,
 	      struct kstat *stat, u32 request_mask)
 {
 	struct path path;
+	struct filename *name = NULL;
 	int error = -EINVAL;
 	unsigned int lookup_flags = LOOKUP_FOLLOW | LOOKUP_AUTOMOUNT;
 
@@ -210,15 +213,21 @@ int vfs_statx(int dfd, const char __user *filename, int flags,
 	if (likely(susfs_is_current_proc_umounted()))
 		goto orig_flow;
 	if (static_branch_likely(&ksu_su_compat_enabled)) {
-		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val)))
-			ksu_handle_stat(&dfd, &filename, &flags);
+		if (unlikely(__ksu_is_allow_uid_for_current(current_uid().val))) {
+			name = getname(filename);
+			if (IS_ERR(name))
+				return PTR_ERR(name);
+			ksu_handle_stat(&dfd, &name, &flags);
+		}
 	}
 orig_flow:
 #endif
 
 	if ((flags & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
-		       AT_EMPTY_PATH | KSTAT_QUERY_FLAGS)) != 0)
-		return -EINVAL;
+		       AT_EMPTY_PATH | KSTAT_QUERY_FLAGS)) != 0) {
+		error = -EINVAL;
+		goto out_putname;
+	}
 
 	if (flags & AT_SYMLINK_NOFOLLOW)
 		lookup_flags &= ~LOOKUP_FOLLOW;
@@ -228,7 +237,10 @@ orig_flow:
 		lookup_flags |= LOOKUP_EMPTY;
 
 retry:
-	error = user_path_at(dfd, filename, lookup_flags, &path);
+	if (name)
+		error = filename_lookup(dfd, name, lookup_flags, &path, NULL);
+	else
+		error = user_path_at(dfd, filename, lookup_flags, &path);
 	if (error)
 		goto out;
 
@@ -239,6 +251,9 @@ retry:
 		goto retry;
 	}
 out:
+out_putname:
+	if (name)
+		putname(name);
 	return error;
 }
 EXPORT_SYMBOL(vfs_statx);
