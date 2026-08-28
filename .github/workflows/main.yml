@@ -53,11 +53,11 @@ jobs:
       uses: actions/cache@v5
       with:
         path: ~/.cache/ccache_mikernel
-        key: kernel-ccache-${{ inputs.device }}-${{ inputs.script }}-${{ github.run_id }}
+        key: kernel-ccache-ecs-${{ inputs.device }}-${{ inputs.script }}-${{ github.run_id }}
         restore-keys: |
-          kernel-ccache-${{ inputs.device }}-${{ inputs.script }}-
-          kernel-ccache-${{ inputs.device }}-
-          kernel-ccache-
+          kernel-ccache-ecs-${{ inputs.device }}-${{ inputs.script }}-
+          kernel-ccache-ecs-${{ inputs.device }}-
+          kernel-ccache-ecs-
 
     - name: Download and Extract Android NDK 
       run: |
@@ -66,6 +66,14 @@ jobs:
         mkdir -p $HOME/toolchain
         mv android-ndk-r27c/toolchains/llvm/prebuilt/linux-x86_64/* $HOME/toolchain/
         rm -rf android-ndk-r27c-linux.zip android-ndk-r27c
+
+    - name: Install ccache-ECS
+      run: |
+        curl -L -o /tmp/ccache-ecs.zip https://github.com/cctv18/ccache-ECS/releases/download/ccache-ECS-v1.0/linux-x86_64-musl-static-binary.zip
+        unzip -o /tmp/ccache-ecs.zip -d /tmp/ccache-ecs
+        sudo install -m 755 /tmp/ccache-ecs/ccache /usr/bin/ccache
+        echo "=== ccache (ECS) version ==="
+        ccache --version
 
     - name: Build Kernel
       run: |

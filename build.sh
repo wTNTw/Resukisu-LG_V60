@@ -43,6 +43,8 @@ export CXX="clang++"
 export PATH="/usr/lib/ccache:$PATH"
 export CCACHE_COMPILERCHECK=content
 export CCACHE_SLOPPINESS=time_macros,include_file_mtime,include_file_ctime
+# Enable ccache-ECS (Effective Configuration State) caching for kernel builds
+export CCACHE_IS_KERNEL_COMPILING="true"
 echo "CCACHE_DIR: [$CCACHE_DIR]"
 
 # Export Build Info
