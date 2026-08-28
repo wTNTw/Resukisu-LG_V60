@@ -98,6 +98,6 @@ jobs:
     - name: Upload Artifacts
       uses: actions/upload-artifact@v6
       with:
-        name: Kernel-${{ inputs.device }}-${{ inputs.script }}-${{ inputs.ksu && 'KSU' || 'NoKSU' }}-${{ github.run_number }}
+        name: AnyKernel3_${{ inputs.ksu && format('ReSukiSU_{0}', env.KSUVER) || 'NoKernelSU' }}_LG_V60
         path: anykernel/*
         if-no-files-found: error

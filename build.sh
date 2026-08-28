@@ -104,6 +104,12 @@ echo "TARGET_DEVICE: $TARGET_DEVICE"
 if [ $KSU_ENABLE -eq 1 ]; then
     echo "KSU is enabled"
     curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/main/kernel/setup.sh" | bash
+    # Compute KernelSU version number (same scheme as Action-Build)
+    KSU_VERSION=$(expr $(git -C KernelSU rev-list --count HEAD 2>/dev/null || echo 13000) + 30700)
+    echo "KSU_VERSION: $KSU_VERSION"
+    if [ -n "$GITHUB_ENV" ]; then
+        echo "KSUVER=$KSU_VERSION" >> "$GITHUB_ENV"
+    fi
 else
     echo "KSU is disabled"
 fi
