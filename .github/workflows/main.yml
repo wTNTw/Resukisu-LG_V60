@@ -89,9 +89,15 @@ jobs:
           bash ${{ inputs.script }} ${{ inputs.device }}
         fi
 
+    - name: Prepare Artifact Content
+      run: |
+        rm -rf anykernel/.git
+        echo "=== Artifact content ==="
+        ls -la anykernel/
+
     - name: Upload Artifacts
       uses: actions/upload-artifact@v6
       with:
         name: Kernel-${{ inputs.device }}-${{ inputs.script }}-${{ inputs.ksu && 'KSU' || 'NoKSU' }}-${{ github.run_number }}
-        path: ./*.zip
+        path: anykernel/*
         if-no-files-found: error
