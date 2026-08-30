@@ -407,7 +407,7 @@ if [ -n "${SUFFIX}" ]; then
     fi
 else
     # Generate random suffix
-    RANDOM_STR=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1)
+    RANDOM_STR=$(dd if=/dev/urandom bs=1 count=32 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 8)
     CUSTOM_SUFFIX="_${RANDOM_STR}"
 fi
 
