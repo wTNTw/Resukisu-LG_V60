@@ -89,12 +89,12 @@ jobs:
           bash ${{ inputs.script }} ${{ inputs.device }}
         fi
     
-         - name: Download ReSukiSU Manager APK
-        if: ${{ inputs.ksu }}
-        continue-on-error: true
-        env:
+    - name: Download ReSukiSU Manager APK
+      if: ${{ inputs.ksu }}
+      continue-on-error: true
+      env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+      run: |
           echo "=== Downloading ReSukiSU Manager APK ==="
           
           MANAGER_BRANCH="main"
